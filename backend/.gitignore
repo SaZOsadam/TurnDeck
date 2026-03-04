@@ -1,0 +1,7 @@
+venv/
+node_modules/
+.env
+__pycache__/
+dist/
+*.pem
+generate_cert.py
