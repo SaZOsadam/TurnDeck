@@ -1,31 +1,14 @@
 import { useState } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
+import PersistentPlayer from './PersistentPlayer'
+import { usePlayer } from '../context/PlayerContext'
 
-const NAV_SECTIONS = [
-  {
-    label: 'Me',
-    items: [
-      { to: '/profile', label: 'My Profile', icon: 'profile' },
-      { to: '/dashboard', label: 'Dashboard', icon: 'home' },
-    ],
-  },
-  {
-    label: 'Library',
-    items: [
-      { to: '/playlists', label: 'My Playlists', icon: 'playlist' },
-      { to: '/play', label: 'Player', icon: 'rotation' },
-      { to: '/stats', label: 'Stats', icon: 'stats' },
-      { to: '/settings', label: 'Settings', icon: 'settings' },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { to: '/faq', label: 'FAQ', icon: 'faq' },
-      { to: '/admin', label: 'Admin Panel', icon: 'admin' },
-      { to: '/privacy', label: 'Privacy', icon: 'privacy' },
-    ],
-  },
+const NAV_ITEMS = [
+  { to: '/profile', label: 'Profile', icon: 'profile' },
+  { to: '/playlists', label: 'Playlists', icon: 'playlist' },
+  { to: '/play', label: 'Play', icon: 'rotation' },
+  { to: '/charts', label: 'Charts', icon: 'charts' },
+  { to: '/faq', label: 'FAQ', icon: 'faq' },
 ]
 
 function NavIcon({ name, className = 'w-5 h-5' }) {
@@ -71,9 +54,9 @@ function NavIcon({ name, className = 'w-5 h-5' }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
       </svg>
     ),
-    admin: (
+    charts: (
       <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
       </svg>
     ),
   }
@@ -83,6 +66,7 @@ function NavIcon({ name, className = 'w-5 h-5' }) {
 export default function Layout() {
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { currentPl } = usePlayer()
 
   const closeSidebar = () => setSidebarOpen(false)
 
@@ -97,43 +81,37 @@ export default function Layout() {
       <aside className={`fixed lg:sticky top-0 left-0 z-40 h-[100dvh] h-screen w-64 bg-gray-800 border-r border-gray-700 flex flex-col transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         {/* Logo */}
         <div className="p-4 border-b border-gray-700">
-          <Link to="/dashboard" onClick={closeSidebar} className="flex items-center gap-2">
+          <Link to="/profile" onClick={closeSidebar} className="flex items-center gap-2">
             <span className="text-2xl font-bold text-green-400">TurnDeck</span>
           </Link>
         </div>
 
-        {/* Nav sections */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.label}>
-              <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-3 mb-2">{section.label}</p>
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  const active = pathname === item.to
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={closeSidebar}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        active
-                          ? 'bg-green-900/40 text-green-400 border border-green-700/50'
-                          : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-                      }`}
-                    >
-                      <NavIcon name={item.icon} />
-                      <span>{item.label}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
+        {/* Nav items */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.to
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={closeSidebar}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-green-900/40 text-green-400 border border-green-700/50'
+                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                }`}
+              >
+                <NavIcon name={item.icon} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-700">
-          <p className="text-gray-500 text-xs text-center">TurnDeck v2.0</p>
+        <div className="p-4 border-t border-gray-700 space-y-2">
+          <Link to="/privacy" onClick={closeSidebar} className="block text-gray-500 hover:text-gray-300 text-xs text-center transition-colors">Privacy Policy</Link>
+          <p className="text-gray-600 text-xs text-center">TurnDeck v2.0</p>
         </div>
       </aside>
 
@@ -146,14 +124,16 @@ export default function Layout() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <Link to="/dashboard" className="text-xl font-bold text-green-400">TurnDeck</Link>
+          <Link to="/profile" className="text-xl font-bold text-green-400">TurnDeck</Link>
           <div className="w-10"></div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden" style={{ paddingBottom: currentPl ? 56 : 0 }}>
           <Outlet />
         </main>
+
+        <PersistentPlayer />
       </div>
     </div>
   )

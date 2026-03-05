@@ -10,6 +10,7 @@ import Privacy from '../pages/Privacy'
 import FAQ from '../pages/FAQ'
 import Profile from '../pages/Profile'
 import Admin from '../pages/Admin'
+import Charts from '../pages/Charts'
 
 export default function AppRoutes() {
   return (
@@ -17,16 +18,17 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route element={<Layout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Navigate to="/profile" replace />} />
           <Route path="/playlists" element={<Playlists />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="/play" element={<Play />} />
           <Route path="/rotation" element={<Navigate to="/play" replace />} />
-          <Route path="/stats" element={<Stats />} />
+          <Route path="/stats" element={<Navigate to="/profile" replace />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/charts" element={<Charts />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -32,7 +32,7 @@ export default function ConsentPopup({ onAgree }) {
 
           <p className="text-gray-500 text-xs pt-1">
             By tapping below you agree to our{' '}
-            <a href="/privacy" onClick={onAgree} className="text-green-400 hover:underline">
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
               Privacy Policy
             </a>.
           </p>

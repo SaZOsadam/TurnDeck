@@ -2,7 +2,7 @@ import { useState } from 'react'
 import PlaylistCard from '../components/PlaylistCard'
 import {
   getPlaylists, getActivePlaylists, getArchivedPlaylists, savePlaylists,
-  loadDefaultPlaylists, parsePlaylistInput, fetchPlaylistName,
+  parsePlaylistInput, fetchPlaylistName,
   updatePlaylist, getCategories, archivePlaylist, restorePlaylist,
   removePlaylist, reorderPlaylists, logActivity, PLATFORM_META,
 } from '../services/storage'
@@ -19,7 +19,6 @@ export default function Playlists() {
   const [newTags, setNewTags] = useState('')
   const [showAddDetails, setShowAddDetails] = useState(false)
   const [error, setError] = useState('')
-  const [defaultsMsg, setDefaultsMsg] = useState('')
   const [adding, setAdding] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [editForm, setEditForm] = useState({})
@@ -31,20 +30,12 @@ export default function Playlists() {
     setCategories(getCategories())
   }
 
-  const handleLoadDefaults = () => {
-    setDefaultsMsg('')
-    setError('')
-    const result = loadDefaultPlaylists()
-    refresh()
-    setDefaultsMsg(result.added > 0 ? `Added ${result.added} default playlist(s)!` : 'Default playlists already added.')
-  }
-
   const handleAddPlaylist = async (e) => {
     e.preventDefault()
     setError('')
     const parsed = parsePlaylistInput(link)
     if (!parsed) {
-      setError('Invalid playlist URL. Supported: Spotify, Apple Music, Pandora, YouTube Music, Tidal.')
+      setError('Invalid URL. Supported: Spotify & Apple Music playlists and albums, Pandora, YouTube Music, Tidal.')
       return
     }
     const existing = getPlaylists()
@@ -53,12 +44,13 @@ export default function Playlists() {
       return
     }
     setAdding(true)
-    const realName = await fetchPlaylistName(parsed.id, parsed.platform, parsed.url)
+    const realName = await fetchPlaylistName(parsed.id, parsed.platform, parsed.url, parsed.type)
     const parsedTags = newTags.split(',').map(t => t.trim()).filter(Boolean)
     const newPlaylist = {
       id: crypto.randomUUID(),
       playlist_id: parsed.id,
       platform: parsed.platform,
+      type: parsed.type || 'playlist',
       url: parsed.url || null,
       name: realName || `Playlist ${parsed.id.slice(0, 8)}...`,
       source: 'manual',
@@ -244,17 +236,6 @@ export default function Playlists() {
 
       {activeTab === 'active' && (
         <>
-          {playlists.length === 0 && (
-            <div className="bg-gradient-to-r from-green-900/40 to-gray-800 rounded-xl p-5 border border-green-700/50 mb-6">
-              <h2 className="text-base font-semibold mb-1">Start with default playlists</h2>
-              <p className="text-gray-400 text-sm mb-3">Load 3 built-in playlists to get started quickly.</p>
-              <button onClick={handleLoadDefaults} className="bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-2 rounded-lg transition-colors text-sm">
-                Use Default Playlists
-              </button>
-            </div>
-          )}
-          {defaultsMsg && <p className="text-green-400 text-sm mb-4">{defaultsMsg}</p>}
-
           {playlists.length > 0 && (
             <div className="flex gap-1.5 flex-wrap mb-4 items-center">
               {['All', ...categories, ...(hasUncategorized ? ['Uncategorized'] : [])].map(cat => (
@@ -275,9 +256,6 @@ export default function Playlists() {
                     sortBy === 'platform' ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-600 text-gray-400 hover:text-white hover:border-gray-500'
                   }`}>
                   🎵 By Platform
-                </button>
-                <button onClick={handleLoadDefaults} className="px-3 py-1.5 rounded-full text-xs font-medium text-green-400 hover:text-green-300 transition-colors">
-                  + Defaults
                 </button>
               </div>
             </div>

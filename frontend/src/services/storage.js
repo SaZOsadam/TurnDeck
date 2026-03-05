@@ -32,18 +32,24 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_CATEGORIES = ['Daily Mission', 'Comeback Push', 'Catalog', 'Filler', 'Naija Push']
 
 const DEFAULT_PLAYLISTS = [
-  { id: '1', playlist_id: '37i9dQZEVXbKY7jLzlJ11V', name: 'Top 50 Nigeria', source: 'default', category: 'Naija Push', notes: '', tags: [], addedAt: new Date().toISOString() },
-  { id: '2', playlist_id: '05RVGTjUUPNOc644TSqqwL', name: 'B-CD Playlist', source: 'default', category: 'Daily Mission', notes: '', tags: [], addedAt: new Date().toISOString() },
-  { id: '3', playlist_id: '5vpppBmyooe3Wt8jfozyiv', name: "AutoDJ Today's Hit", source: 'default', category: 'Catalog', notes: '', tags: [], addedAt: new Date().toISOString() },
+  { playlist_id: '37i9dQZEVXbMDoHDwVN2tF', name: 'Top Global', platform: 'spotify', type: 'playlist', category: 'Daily Mission', notes: '', tags: [] },
+  { playlist_id: '37i9dQZF1DXcBWIGoYBM5M', name: "Today's Top Hits", platform: 'spotify', type: 'playlist', category: 'Daily Mission', notes: '', tags: [] },
+  { playlist_id: '37i9dQZEVXbKY7jLzlJ11V', name: 'Top 50 Nigeria', platform: 'spotify', type: 'playlist', category: 'Naija Push', notes: '', tags: [] },
+  { playlist_id: 'pl.f4d106fed2bd41149eda4ff549bdc774', name: "Today's Hits", platform: 'apple_music', type: 'playlist', category: 'Daily Mission', notes: '', tags: [], url: 'https://music.apple.com/us/playlist/todays-hits/pl.f4d106fed2bd41149eda4ff549bdc774' },
 ]
 
 // --- Auto-migrate stale data ---
-const STORAGE_VERSION = '3'  // bump this when defaults change
+const STORAGE_VERSION = '6'  // bump this when defaults change
 ;(function migrate() {
   const v = localStorage.getItem('autodj_version')
   if (v !== STORAGE_VERSION) {
     localStorage.removeItem(KEYS.PLAYLISTS)
     localStorage.removeItem(KEYS.ROTATION)
+    if (DEFAULT_PLAYLISTS.length > 0) {
+      localStorage.setItem(KEYS.PLAYLISTS, JSON.stringify(
+        DEFAULT_PLAYLISTS.map(dp => ({ ...dp, id: crypto.randomUUID(), addedAt: new Date().toISOString() }))
+      ))
+    }
     localStorage.setItem('autodj_version', STORAGE_VERSION)
   }
 })()
@@ -196,21 +202,33 @@ export function parsePlaylistInput(input) {
   if (!input || !input.trim()) return null
   const trimmed = input.trim()
 
-  // Spotify URI
+  // Spotify URI — playlist
   const spotifyUri = trimmed.match(/spotify:playlist:([a-zA-Z0-9]+)/)
-  if (spotifyUri) return { id: spotifyUri[1], platform: 'spotify' }
+  if (spotifyUri) return { id: spotifyUri[1], platform: 'spotify', type: 'playlist' }
 
-  // Spotify URL
+  // Spotify URI — album
+  const spotifyUriAlbum = trimmed.match(/spotify:album:([a-zA-Z0-9]+)/)
+  if (spotifyUriAlbum) return { id: spotifyUriAlbum[1], platform: 'spotify', type: 'album' }
+
+  // Spotify URL — playlist
   const spotifyUrl = trimmed.match(/open\.spotify\.com\/(?:[a-z]{2,5}-[a-z]{2,5}\/)?playlist\/([a-zA-Z0-9]+)/)
-  if (spotifyUrl) return { id: spotifyUrl[1], platform: 'spotify' }
+  if (spotifyUrl) return { id: spotifyUrl[1], platform: 'spotify', type: 'playlist' }
 
-  // Apple Music URL — music.apple.com/[country]/playlist/name/pl.XXXXX
+  // Spotify URL — album
+  const spotifyAlbum = trimmed.match(/open\.spotify\.com\/(?:[a-z]{2,5}-[a-z]{2,5}\/)?album\/([a-zA-Z0-9]+)/)
+  if (spotifyAlbum) return { id: spotifyAlbum[1], platform: 'spotify', type: 'album' }
+
+  // Apple Music URL — playlist with name
   const appleUrl = trimmed.match(/music\.apple\.com\/[a-z]{2,4}\/playlist\/[^/]+\/(pl\.[a-zA-Z0-9]+)/)
-  if (appleUrl) return { id: appleUrl[1], platform: 'apple_music', url: trimmed }
+  if (appleUrl) return { id: appleUrl[1], platform: 'apple_music', type: 'playlist', url: trimmed }
 
-  // Apple Music share URL — music.apple.com/[country]/playlist/pl.XXXXX
+  // Apple Music share URL — playlist without name
   const appleShort = trimmed.match(/music\.apple\.com\/[a-z]{2,4}\/playlist\/(pl\.[a-zA-Z0-9]+)/)
-  if (appleShort) return { id: appleShort[1], platform: 'apple_music', url: trimmed }
+  if (appleShort) return { id: appleShort[1], platform: 'apple_music', type: 'playlist', url: trimmed }
+
+  // Apple Music URL — album (numeric ID)
+  const appleAlbum = trimmed.match(/music\.apple\.com\/[a-z]{2,4}\/album\/(?:[^/]+\/)?(\.?\d{6,})/)
+  if (appleAlbum) return { id: appleAlbum[1], platform: 'apple_music', type: 'album', url: trimmed }
 
   // Pandora — pandora.com/playlist/PL:XXXXX
   const pandoraUrl = trimmed.match(/pandora\.com\/(?:playlist|station)\/([^?&/]+)/)
@@ -237,10 +255,11 @@ export function parsePlaylistId(input) {
 }
 
 // --- Fetch playlist name (platform-aware) ---
-export async function fetchPlaylistName(playlistId, platform = 'spotify', rawUrl = null) {
+export async function fetchPlaylistName(playlistId, platform = 'spotify', rawUrl = null, type = 'playlist') {
   try {
     if (platform === 'spotify') {
-      const url = `https://open.spotify.com/oembed?url=https://open.spotify.com/playlist/${playlistId}`
+      const kind = type === 'album' ? 'album' : 'playlist'
+      const url = `https://open.spotify.com/oembed?url=https://open.spotify.com/${kind}/${playlistId}`
       const res = await fetch(url)
       if (!res.ok) return null
       const data = await res.json()
@@ -274,9 +293,10 @@ export const PLATFORM_META = {
 }
 
 export function getEmbedUrl(playlist) {
-  const { platform, playlist_id, url } = playlist
-  if (platform === 'spotify' || !platform) return `https://open.spotify.com/embed/playlist/${playlist_id}`
-  if (platform === 'apple_music') return `https://embed.music.apple.com/${url?.match(/music\.apple\.com\/(\w{2,4})\//)?.[1] || 'us'}/playlist/${playlist_id}`
+  const { platform, playlist_id, url, type } = playlist
+  const kind = type === 'album' ? 'album' : 'playlist'
+  if (platform === 'spotify' || !platform) return `https://open.spotify.com/embed/${kind}/${playlist_id}`
+  if (platform === 'apple_music') return `https://embed.music.apple.com/${url?.match(/music\.apple\.com\/(\w{2,4})\//)?.[1] || 'us'}/${kind}/${playlist_id}`
   if (platform === 'youtube_music') return `https://www.youtube.com/embed/videoseries?list=${playlist_id}`
   if (platform === 'tidal') return `https://embed.tidal.com/playlists/${playlist_id}`
   return null
@@ -465,6 +485,57 @@ export function getTimerTarget() {
   } catch {
     return null
   }
+}
+
+// --- Chart Tracker ---
+const CHART_TRACKER_KEY = 'turndeck_chart_tracker'
+
+export function getChartEntries() {
+  try {
+    const raw = localStorage.getItem(CHART_TRACKER_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function saveChartEntries(entries) {
+  localStorage.setItem(CHART_TRACKER_KEY, JSON.stringify(entries))
+}
+
+export function addChartEntry({ song, artist, type, platform }) {
+  const entries = getChartEntries()
+  const entry = {
+    id: crypto.randomUUID(),
+    song: song.trim(),
+    artist: artist.trim(),
+    type: type || 'song',
+    platform,
+    positions: [],
+    addedAt: new Date().toISOString(),
+  }
+  entries.unshift(entry)
+  saveChartEntries(entries)
+  return entry
+}
+
+export function logChartPosition(id, position, note = '') {
+  const entries = getChartEntries()
+  const idx = entries.findIndex(e => e.id === id)
+  if (idx === -1) return
+  const today = new Date().toISOString().slice(0, 10)
+  const existing = entries[idx].positions.findIndex(p => p.date === today)
+  if (existing >= 0) {
+    entries[idx].positions[existing] = { position: Number(position), date: today, note, loggedAt: new Date().toISOString() }
+  } else {
+    entries[idx].positions.unshift({ position: Number(position), date: today, note, loggedAt: new Date().toISOString() })
+  }
+  saveChartEntries(entries)
+}
+
+export function removeChartEntry(id) {
+  const entries = getChartEntries().filter(e => e.id !== id)
+  saveChartEntries(entries)
 }
 
 // --- Skip to next playlist ---
