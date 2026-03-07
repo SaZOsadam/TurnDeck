@@ -82,7 +82,7 @@ export default function Layout() {
         {/* Logo */}
         <div className="p-4 border-b border-gray-700">
           <Link to="/profile" onClick={closeSidebar} className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-green-400">TurnDeck</span>
+            <span className="text-2xl font-bold text-green-400 font-brand">TurnDeck</span>
           </Link>
         </div>
 
@@ -124,7 +124,7 @@ export default function Layout() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <Link to="/profile" className="text-xl font-bold text-green-400">TurnDeck</Link>
+          <Link to="/profile" className="text-xl font-bold text-green-400 font-brand">TurnDeck</Link>
           <div className="w-10"></div>
         </header>
 

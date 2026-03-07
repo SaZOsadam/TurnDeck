@@ -4,7 +4,7 @@ export default function Welcome() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white px-4">
       <div className="text-center max-w-md">
-        <h1 className="text-5xl font-bold mb-3">TurnDeck</h1>
+        <h1 className="text-5xl font-bold mb-3 font-brand">TurnDeck</h1>
         <p className="text-gray-400 mb-8 text-lg">Your streaming playlist organiser. Bookmark, tag, and quick-access playlists from any platform in one place.</p>
 
         <Link
