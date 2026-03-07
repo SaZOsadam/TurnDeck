@@ -11,6 +11,7 @@ import FAQ from '../pages/FAQ'
 import Profile from '../pages/Profile'
 import Admin from '../pages/Admin'
 import Charts from '../pages/Charts'
+import HowItWorks from '../pages/HowItWorks'
 
 export default function AppRoutes() {
   return (
@@ -29,6 +30,7 @@ export default function AppRoutes() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/charts" element={<Charts />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
